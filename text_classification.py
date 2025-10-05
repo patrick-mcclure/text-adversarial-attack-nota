@@ -6,8 +6,7 @@
 #
 import torch
 import numpy as np
-from datasets import list_datasets, load_dataset, list_metrics, load_metric
-from transformers import AutoConfig, AutoTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer
 import argparse
 import os
 
@@ -50,7 +49,8 @@ def main(args):
     train_args = TrainingArguments(
         args.checkpoint_folder,
         disable_tqdm=not args.tqdm,
-        evaluation_strategy = "epoch",
+        eval_strategy = "epoch",
+        save_strategy = "epoch",
         learning_rate=args.lr,
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,

@@ -20,7 +20,7 @@ def load_data(args):
         dataset = load_dataset("ag_news")
         num_labels = 4
     elif args.dataset == "imdb":
-        dataset = load_dataset("imdb", ignore_verifications=True)
+        dataset = load_dataset("imdb")
         num_labels = 2
     elif args.dataset == "yelp":
         dataset = load_dataset("yelp_polarity")
