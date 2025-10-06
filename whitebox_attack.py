@@ -362,7 +362,7 @@ if __name__ == "__main__":
     parser.add_argument("--constraint", default="bertscore_idf", type=str,
         choices=["cosine", "bertscore", "bertscore_idf"],
         help="constraint function")
-    parser.add_argument("--lr", default=3e-1, type=float,
+    parser.add_argument("--lr", default=6e-1, type=float,
         help="learning rate")
     parser.add_argument("--kappa", default=5, type=float,
         help="CW loss margin")

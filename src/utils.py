@@ -104,7 +104,7 @@ def load_gpt2_from_dict(dict_path, output_hidden_states=False):
         output_hidden_states=output_hidden_states
     )
     model = GPT2LMHeadModel(config)
-    model.load_state_dict(state_dict)
+    model.load_state_dict(state_dict,strict=False)
     # The input embedding is not loaded automatically
     model.set_input_embeddings(embedding_from_weights(state_dict['transformer.wte.weight'].cpu()))
 
