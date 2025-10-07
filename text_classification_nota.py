@@ -151,8 +151,8 @@ def main(args):
         gradient_accumulation_steps=1,
         #num_warmup_steps=args.num_warmup_steps,
         learning_rate=args.lr,
-        num_train_adv_examples=1.0,
-        attack_num_workers_per_device=1,
+        num_train_adv_examples=0.2,
+        attack_num_workers_per_device=4,
         query_budget_train=200,
         checkpoint_interval_epochs=1,
         output_dir=args.checkpoint_folder,
@@ -215,7 +215,7 @@ if __name__ == "__main__":
     # Optimization
     parser.add_argument("--batch_size", default=16, type=int,
         help="batch size for training and evaluation")
-    parser.add_argument("--epochs", default=6, type=int,
+    parser.add_argument("--epochs", default=4, type=int,
         help="number of epochs to train for")
     parser.add_argument("--lr", default=2e-5, type=float,
         help="learning rate")
