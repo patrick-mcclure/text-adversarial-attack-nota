@@ -97,13 +97,13 @@ def Trainer_NOTA(Trainer):
         # Since adversarial_example won't be an input to the model , we will have to remove it from the input
         # dictionary in collate_fn
         
-        num_classes = torch.max(self.train_dataset.labels) + 1
+        nota_label = torch.max(self.train_dataset.labels) + 1
         
         adversarial_examples = [
             (
                 tuple(r.perturbed_result.attacked_text._text_input.values())
                 + ("adversarial_example",),
-                num_classes,#r.perturbed_result.ground_truth_output,
+                nota_label,#r.perturbed_result.ground_truth_output,
             )
             for r in results
             if isinstance(r, (SuccessfulAttackResult, MaximizedAttackResult))
