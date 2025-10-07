@@ -354,7 +354,7 @@ if __name__ == "__main__":
     parser.add_argument("--attack_target", default="premise", type=str,
         choices=["premise", "hypothesis"],
         help="attack either the premise or hypothesis for MNLI")
-    parser.add_argument("--initial_coeff", default=15, type=int,
+    parser.add_argument("--initial_coeff", default=12, type=int,
         help="initial log coefficients")
     parser.add_argument("--adv_loss", default="cw", type=str,
         choices=["cw", "ce"],
@@ -362,13 +362,13 @@ if __name__ == "__main__":
     parser.add_argument("--constraint", default="bertscore_idf", type=str,
         choices=["cosine", "bertscore", "bertscore_idf"],
         help="constraint function")
-    parser.add_argument("--lr", default=6e-1, type=float,
+    parser.add_argument("--lr", default=3e-1, type=float,
         help="learning rate")
     parser.add_argument("--kappa", default=5, type=float,
         help="CW loss margin")
     parser.add_argument("--embed_layer", default=-1, type=int,
         help="which layer of LM to extract embeddings from")
-    parser.add_argument("--lam_sim", default=1, type=float,
+    parser.add_argument("--lam_sim", default=20, type=float,
         help="embedding similarity regularizer")
     parser.add_argument("--lam_perp", default=1, type=float,
         help="(log) perplexity regularizer")

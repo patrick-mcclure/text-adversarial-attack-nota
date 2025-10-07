@@ -6,12 +6,9 @@
 #
 import torch
 from torch.utils.data import Dataset
-import numpy as np
-from datasets import list_datasets, load_dataset, list_metrics, load_metric
 import transformers
-from transformers import AutoConfig, AutoTokenizer, AutoModelForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import math
-import random
 from tqdm import tqdm
 import torch.nn.functional as F
 transformers.logging.set_verbosity(transformers.logging.ERROR)
@@ -128,19 +125,20 @@ def evaluate_adv_samples(model, tokenizer, tokenizer_surr, adv_log_coeffs, clean
                 print('Adversarial accuracy = %.4f' % torch.cat(all_corr, 0).float().mean(1).eq(1).float().mean())
     
     all_corr = torch.cat(all_corr, 0)
-    _, min_index = all_corr.float().cummin(1)
-    embed = hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
-    if attack_target == 'premise':
-        clean_embeddings = embed(clean_texts['premise'])
-        adv_texts = [all_sentences['premise'][j][min_index[j, -1]] for j in range(num_samples)]
-    elif attack_target == 'hypothesis':
-        clean_embeddings = embed(clean_texts['hypothesis'])
-        adv_texts = [all_sentences['hypothesis'][j][min_index[j, -1]] for j in range(num_samples)]
-    else:
-        clean_embeddings = embed(clean_texts)
-        adv_texts = [all_sentences[j][min_index[j, -1]] for j in range(num_samples)]
-    adv_embeddings = embed(adv_texts)
-    cosine_sim = tf.reduce_mean(tf.reduce_sum(clean_embeddings * adv_embeddings, axis=1))
+    #_, min_index = all_corr.float().cummin(1)
+    #embed = hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
+    #if attack_target == 'premise':
+    #    clean_embeddings = embed(clean_texts['premise'])
+    #    adv_texts = [all_sentences['premise'][j][min_index[j, -1]] for j in range(num_samples)]
+    #elif attack_target == 'hypothesis':
+    #    clean_embeddings = embed(clean_texts['hypothesis'])
+    #    adv_texts = [all_sentences['hypothesis'][j][min_index[j, -1]] for j in range(num_samples)]
+    #else:
+    #    clean_embeddings = embed(clean_texts)
+    #    adv_texts = [all_sentences[j][min_index[j, -1]] for j in range(num_samples)]
+    #adv_embeddings = embed(adv_texts)
+    #cosine_sim = tf.reduce_mean(tf.reduce_sum(clean_embeddings * adv_embeddings, axis=1))
+    cosine_sim = 0
     print('Cosine similarity = %.4f' % cosine_sim)
                 
     return all_sentences, all_corr, cosine_sim
@@ -253,7 +251,7 @@ if __name__ == "__main__":
     # Attack setting
     parser.add_argument("--start_index", default=0, type=int,
         help="starting sample index")
-    parser.add_argument("--end_index", default=1000, type=int,
+    parser.add_argument("--end_index", default=100, type=int,
         help="end sample index")
     parser.add_argument("--num_samples", default=100, type=int,
         help="number of samples per split")
@@ -276,14 +274,14 @@ if __name__ == "__main__":
         help="CW loss margin")
     parser.add_argument("--embed_layer", default=-1, type=int,
         help="which layer of LM to extract embeddings from")
-    parser.add_argument("--lam_sim", default=1, type=float,
+    parser.add_argument("--lam_sim", default=20, type=float,
         help="embedding similarity regularizer")
     parser.add_argument("--lam_perp", default=1, type=float,
         help="(log) perplexity regularizer")
     parser.add_argument("--print_every", default=100, type=int,
         help="print result every x samples")
     parser.add_argument("--gumbel_samples", default=100, type=int,
-        help="number of gumbel samples; if 0, use argmax")
+        help="number of gumbel samples")
 
     args = parser.parse_args()
 

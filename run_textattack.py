@@ -10,7 +10,6 @@ from os.path import join
 import argparse
 from bert_score import BERTScorer
 import csv
-import datasets
 import json
 import numpy as np
 import time
