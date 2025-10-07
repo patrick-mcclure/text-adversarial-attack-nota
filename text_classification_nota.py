@@ -20,7 +20,7 @@ from textattack import Trainer
 from textattack.shared.utils import logger
 from textattack.attack import Attack
 from textattack.attack_args import AttackArgs
-from textattack.attack_results import MaximizedAttackResult, SuccessfulAttackResult
+from textattack.attack_results import MaximizedAttackResult, SuccessfulAttackResult, FailedAttackResult
 from textattack.attacker import Attacker
 from textattack.model_args import HUGGINGFACE_MODELS
 from textattack.models.helpers import LSTMForClassification, WordCNNForClassification
@@ -106,7 +106,7 @@ def Trainer_NOTA(Trainer):
                 nota_label,#r.perturbed_result.ground_truth_output,
             )
             for r in results
-            if isinstance(r, (SuccessfulAttackResult, MaximizedAttackResult))
+            if isinstance(r, (SuccessfulAttackResult, MaximizedAttackResult)) or isinstance(r, (FailedAttackResult))
         ]
 
         # Name for column indicating if an example is adversarial is set as "_example_type".
@@ -145,14 +145,14 @@ def main(args):
         num_epochs=args.epochs,
         num_clean_epochs=1,
         attack_epoch_interval=1,
-        #parallel=args.parallel,
+        parallel=True,
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
         gradient_accumulation_steps=1,
         #num_warmup_steps=args.num_warmup_steps,
         learning_rate=args.lr,
-        num_train_adv_examples=0.2,
-        attack_num_workers_per_device=4,
+        num_train_adv_examples=-1,#0.2,
+        attack_num_workers_per_device=6,
         query_budget_train=200,
         checkpoint_interval_epochs=1,
         output_dir=args.checkpoint_folder,
