@@ -60,8 +60,8 @@ def get_output_file_nota(args, model, start, end):
 
     model_name = model.replace('/', '-')
     output_file = f"{model_name}_{dataset_str}{suffix}_{start}-{end}"
-    if args.nota != None:
-        output_file += f"_iters={args.num_iters}_{attack_str}_lambda_sim={args.lam_sim}_lambda_perp={args.lam_perp}_emblayer={args.embed_layer}_{args.constraint}_nota_{args.nota}.pth"
+    if args.nota_defense:
+        output_file += f"_iters={args.num_iters}_{attack_str}_lambda_sim={args.lam_sim}_lambda_perp={args.lam_perp}_emblayer={args.embed_layer}_{args.constraint}_nota_{args.nota_attack}.pth"
     else:
         output_file += f"_iters={args.num_iters}_{attack_str}_lambda_sim={args.lam_sim}_lambda_perp={args.lam_perp}_emblayer={args.embed_layer}_{args.constraint}.pth"
 
@@ -77,7 +77,12 @@ def load_checkpoints(args):
     clean_logits, adv_logits, times, labels = [], [], [], []
     
     for i in tqdm(range(args.start_index, args.end_index, args.num_samples)):
-        output_file = get_output_file(args, args.surrogate_model, i, i + args.num_samples)
+        if args.nota_defense:
+            output_file = get_output_file_nota(args, args.surrogate_model, i, i + args.num_samples)
+        else:
+            output_file = get_output_file(args, args.surrogate_model, i, i + args.num_samples)
+        print("Output File")
+        print(output_file)
         output_file = os.path.join(args.adv_samples_folder, output_file)
         if os.path.exists(output_file):
             checkpoint = torch.load(output_file)

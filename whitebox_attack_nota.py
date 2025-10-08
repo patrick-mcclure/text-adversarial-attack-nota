@@ -21,7 +21,7 @@ import torch
 import torch.nn.functional as F
 
 from src.dataset import load_data
-from src.utils import bool_flag, get_output_file_nota, print_args, load_gpt2_from_dict
+from src.utils import bool_flag, get_output_file, get_output_file_nota, print_args, load_gpt2_from_dict
 
 
 def wer(x, y):
@@ -54,7 +54,10 @@ def log_perplexity(logits, coeffs):
 
 def main(args):
     pretrained = args.model.startswith('textattack')
-    output_file = get_output_file_nota(args, args.model, args.start_index, args.start_index + args.num_samples)
+    if args.nota_defense:
+        output_file = get_output_file_nota(args, args.model, args.start_index, args.start_index + args.num_samples)
+    else:
+        output_file = get_output_file(args, args.model, args.start_index, args.start_index + args.num_samples)
     output_file = os.path.join(args.adv_samples_folder, output_file)
     print(f"Outputting files to {output_file}")
     if os.path.exists(output_file):
@@ -63,7 +66,8 @@ def main(args):
     
     # Load dataset
     dataset, num_labels = load_data(args)
-    num_labels += 1
+    if args.nota_defense:
+        num_labels += 1
     label_perm = lambda x: x
     if pretrained and args.model == 'textattack/bert-base-uncased-MNLI':
         label_perm = lambda x: (x + 1) % 3
@@ -190,7 +194,7 @@ def main(args):
             if args.adv_loss == 'ce':
                 adv_loss = -F.cross_entropy(pred, label * torch.ones(args.batch_size).long().cuda())
             elif args.adv_loss == 'cw':
-                if not args.nota:
+                if not args.nota_attack:
                     top_preds = pred.sort(descending=True)[1]
                     correct = (top_preds[:, 0] == label).long()
                     indices = top_preds.gather(1, correct.view(-1, 1))
@@ -202,8 +206,8 @@ def main(args):
                     nota_first = (top_preds[:, 0] == nota_label)
                     correct_second = (top_preds[:, 1] == label)
                     nota_second = (top_preds[:, 1] == nota_label)
-                    first = correct or nota_first
-                    target_index = (first).long() + (first and (correct_second or nota_second)).long()
+                    first = torch.logical_or(correct,nota_first)
+                    target_index = first.long() + torch.logical_and(first,torch.logical_or(correct_second,nota_second)).long()
                     indices = top_preds.gather(1, (target_index).view(-1, 1))
                     adv_loss = (pred[:, label] - pred.gather(1, indices).squeeze() + args.kappa).clamp(min=0).mean()
             
@@ -285,7 +289,7 @@ def main(args):
                     token_errors.append(wer(adv_ids, x['input_ids'][0]))
                 adv_logit = model(input_ids=x['input_ids'].cuda(), attention_mask=x['attention_mask'].cuda(),
                                   token_type_ids=(x['token_type_ids'].cuda() if 'token_type_ids' in x else None)).logits.data.cpu()
-                if (not ((adv_logit.argmax() == label) or (args.nota and (adv_logit.argmax() == nota_label)))) or j == args.gumbel_samples - 1:
+                if (not ((adv_logit.argmax() == label) or (args.nota_attack and (adv_logit.argmax() == nota_label)))) or j == args.gumbel_samples - 1:
                     if args.dataset == 'mnli':
                         adv_texts['premise'].append(adv_premise)
                         adv_texts['hypothesis'].append(adv_hypothesis)
@@ -389,9 +393,10 @@ if __name__ == "__main__":
         help="print loss every x iterations")
     parser.add_argument("--gumbel_samples", default=100, type=int,
         help="number of gumbel samples; if 0, use argmax")
-    parser.add_argument("--nota", default=False, type=bool_flag,
+    parser.add_argument("--nota_attack", default=False, type=bool_flag,
         help="use a nota-adapted attack")
-
+    parser.add_argument("--nota_defense", default=False, type=bool_flag,
+        help="use a nota defense")
     args = parser.parse_args()
     print_args(args)
     main(args)

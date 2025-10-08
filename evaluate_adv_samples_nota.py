@@ -19,10 +19,10 @@ import json
 import os
 
 from src.dataset import load_data
-from src.utils import bool_flag, get_output_file, load_checkpoints
+from src.utils import bool_flag, get_output_file, get_output_file_nota, load_checkpoints
 
     
-def evaluate(model, tokenizer, testset, text_key=None, batch_size=10, pretrained=False, label_perm=(lambda x: x), nota=False):
+def evaluate(model, tokenizer, testset, text_key=None, batch_size=10, pretrained=False, label_perm=(lambda x: x), nota_defense=False):
     """
     Compute the accuracy of a model on a testset
     """
@@ -55,17 +55,20 @@ def evaluate(model, tokenizer, testset, text_key=None, batch_size=10, pretrained
                 corr.append(preds.argmax(1).eq(label_perm(y)))
             else:
                 corr.append(preds.argmax(1).eq(y))
-            if nota:
+            if nota_defense:
                 nota_label = preds.size()[-1] - 1
+                print("NOTA Label")
+                print(nota_label)
+                nota_y = torch.empty_like(y).fill_(nota_label)
                 if label_perm is not None:
-                    asr.append(preds.argmax(1).neq(label_perm(y)) and preds.argmax(1).neq(nota_label))
+                    asr.append(preds.argmax(1).ne(label_perm(y)) * preds.argmax(1).ne(nota_y))
                 else:
-                    asr.append(preds.argmax(1).neq(y) and preds.argmax(1).neq(nota_label))
+                    asr.append(preds.argmax(1).ne(y) * preds.argmax(1).ne(nota_y))
             else:
                 if label_perm is not None:
-                    asr.append(preds.argmax(1).neq(label_perm(y)))
+                    asr.append(preds.argmax(1).ne(label_perm(y)))
                 else:
-                    asr.append(preds.argmax(1).neq(y))
+                    asr.append(preds.argmax(1).ne(y))
             
             return torch.cat(corr, 0), torch.cat(asr, 0)
 
@@ -132,7 +135,7 @@ def evaluate_adv_samples(model, tokenizer, tokenizer_surr, adv_log_coeffs, clean
             evalset['label'] = [labels[i]] * gumbel_samples
             evalset = TokenDataset(evalset)
             corr, asr = evaluate(model, tokenizer, evalset, text_key, batch_size,
-                            pretrained=pretrained, label_perm=label_perm, nota=nota)
+                            pretrained=pretrained, label_perm=label_perm, nota_defense=args.nota_defense)
             all_corr.append(corr.unsqueeze(0))
             all_asr.append(asr.unsqueeze(0))
             if (i+1) % print_every == 0:
@@ -163,6 +166,8 @@ def evaluate_adv_samples(model, tokenizer, tokenizer_surr, adv_log_coeffs, clean
 def main(args):
     # Load data
     dataset, num_labels = load_data(args)
+    if args.nota_defense:
+        num_labels +=1
     if args.dataset == 'mnli':
         text_key = None
         testset_key = 'validation_%s' % args.mnli_option
@@ -177,7 +182,10 @@ def main(args):
     tokenizer = AutoTokenizer.from_pretrained(args.target_model, use_fast=True)
     model = AutoModelForSequenceClassification.from_pretrained(args.target_model, num_labels=num_labels).cuda()
     if not pretrained:
-        model_checkpoint = os.path.join(args.result_folder, '%s_%s%s.pth' % (args.target_model.replace('/', '-'), args.dataset, suffix))
+        if args.nota_defense:
+            model_checkpoint = os.path.join(args.result_folder, '%s_%s%s_nota.pth' % (args.target_model.replace('/', '-'), args.dataset, suffix))
+        else:
+            model_checkpoint = os.path.join(args.result_folder, '%s_%s%s.pth' % (args.target_model.replace('/', '-'), args.dataset, suffix))
         print('Loading checkpoint: %s' % model_checkpoint)
         model.load_state_dict(torch.load(model_checkpoint))
         tokenizer.model_max_length = 512
@@ -194,7 +202,7 @@ def main(args):
             label_perm = lambda x: -(x - 1) + 1
 
     # Compute clean accuracy
-    corr = evaluate(model, tokenizer, dataset[testset_key], text_key, pretrained=pretrained, label_perm=label_perm,nota=args.nota)
+    corr, _ = evaluate(model, tokenizer, dataset[testset_key], text_key, pretrained=pretrained, label_perm=label_perm,nota_defense=args.nota_defense)
     print('Clean accuracy = %.4f' % corr.float().mean())
     
     surr_tokenizer = AutoTokenizer.from_pretrained(args.surrogate_model, use_fast=True)
@@ -223,7 +231,8 @@ def main(args):
         "adv_acc2": all_corr.float().mean(1).eq(1).float().mean().item(),
         "adv_asr2": all_asr.float().mean(1).eq(1).float().mean().item()
     }))
-    output_file = get_output_file(args, args.surrogate_model, args.start_index, args.end_index)
+    
+    output_file = get_output_file_nota(args, args.surrogate_model, args.start_index, args.end_index)
     output_file = os.path.join(args.adv_samples_folder,
                                'transfer_%s_%s' % (args.target_model.replace('/', '-'), output_file))
     torch.save({
@@ -300,9 +309,10 @@ if __name__ == "__main__":
         help="print result every x samples")
     parser.add_argument("--gumbel_samples", default=100, type=int,
         help="number of gumbel samples")
-    parser.add_argument("--nota", default=False, type=bool_flag,
-        help="use a nota adapted attack against a nota model")
-
+    parser.add_argument("--nota_attack", default=False, type=bool_flag,
+        help="use a nota-adapted attack")
+    parser.add_argument("--nota_defense", default=False, type=bool_flag,
+        help="use a nota defense")
     args = parser.parse_args()
 
     main(args)

@@ -217,7 +217,7 @@ if __name__ == "__main__":
     # Optimization
     parser.add_argument("--batch_size", default=16, type=int,
         help="batch size for training and evaluation")
-    parser.add_argument("--epochs", default=4, type=int,
+    parser.add_argument("--epochs", default=5, type=int,
         help="number of epochs to train for")
     parser.add_argument("--lr", default=2e-5, type=float,
         help="learning rate")
