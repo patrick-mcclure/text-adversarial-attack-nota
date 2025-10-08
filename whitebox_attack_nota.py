@@ -63,6 +63,7 @@ def main(args):
     
     # Load dataset
     dataset, num_labels = load_data(args)
+    num_labels += 1
     label_perm = lambda x: x
     if pretrained and args.model == 'textattack/bert-base-uncased-MNLI':
         label_perm = lambda x: (x + 1) % 3
@@ -74,7 +75,7 @@ def main(args):
     if not pretrained:
         # Load model to attack
         suffix = '_finetune' if args.finetune else ''
-        model_checkpoint = os.path.join(args.result_folder, '%s_%s%s.pth' % (args.model.replace('/', '-'), args.dataset, suffix))
+        model_checkpoint = os.path.join(args.result_folder, '%s_%s%s_nota.pth' % (args.model.replace('/', '-'), args.dataset, suffix))
         print('Loading checkpoint: %s' % model_checkpoint)
         model.load_state_dict(torch.load(model_checkpoint))
         tokenizer.model_max_length = 512

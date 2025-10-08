@@ -16,7 +16,6 @@ import collections
 from src.dataset import load_data
 from src.utils import bool_flag
 
-from textattack import Trainer
 from textattack.shared.utils import logger
 from textattack.attack import Attack
 from textattack.attack_args import AttackArgs
@@ -27,7 +26,7 @@ from textattack.models.helpers import LSTMForClassification, WordCNNForClassific
 from textattack.models.wrappers import ModelWrapper
 from textattack.training_args import CommandLineTrainingArgs, TrainingArgs
 from a2t import A2TYoo2021
-def Trainer_NOTA(Trainer):
+class Trainer_NOTA(textattack.Trainer):
     def _generate_adversarial_examples(self, epoch):
         """Generate adversarial examples using attacker."""
         assert (
@@ -106,7 +105,7 @@ def Trainer_NOTA(Trainer):
                 nota_label,#r.perturbed_result.ground_truth_output,
             )
             for r in results
-            if isinstance(r, (SuccessfulAttackResult, MaximizedAttackResult)) or isinstance(r, (FailedAttackResult))
+            if isinstance(r, (SuccessfulAttackResult, MaximizedAttackResult,FailedAttackResult))
         ]
 
         # Name for column indicating if an example is adversarial is set as "_example_type".
@@ -151,7 +150,7 @@ def main(args):
         gradient_accumulation_steps=1,
         #num_warmup_steps=args.num_warmup_steps,
         learning_rate=args.lr,
-        num_train_adv_examples=-1,#0.2,
+        num_train_adv_examples=1,#0.2,
         attack_num_workers_per_device=6,
         query_budget_train=200,
         checkpoint_interval_epochs=1,
@@ -172,7 +171,7 @@ def main(args):
 
     model_wrapper = textattack.models.wrappers.HuggingFaceModelWrapper(model, tokenizer)
     
-    trainer = textattack.Trainer(
+    trainer = Trainer_NOTA(
         model_wrapper,
         "classification",
         attack= A2TYoo2021.build(model_wrapper, mlm=False),

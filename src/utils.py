@@ -46,6 +46,27 @@ def get_output_file(args, model, start, end):
 
     return output_file
 
+def get_output_file_nota(args, model, start, end):
+    suffix = ''
+    if args.finetune:
+        suffix += '_finetune'
+    if args.dataset == 'mnli':
+        dataset_str = f"{args.dataset}_{args.mnli_option}_{args.attack_target}"
+    else:
+        dataset_str = args.dataset
+    attack_str = args.adv_loss
+    if args.adv_loss == 'cw':
+        attack_str += f'_kappa={args.kappa}'
+
+    model_name = model.replace('/', '-')
+    output_file = f"{model_name}_{dataset_str}{suffix}_{start}-{end}"
+    if args.nota != None:
+        output_file += f"_iters={args.num_iters}_{attack_str}_lambda_sim={args.lam_sim}_lambda_perp={args.lam_perp}_emblayer={args.embed_layer}_{args.constraint}_nota_{args.nota}.pth"
+    else:
+        output_file += f"_iters={args.num_iters}_{attack_str}_lambda_sim={args.lam_sim}_lambda_perp={args.lam_perp}_emblayer={args.embed_layer}_{args.constraint}.pth"
+
+    return output_file
+
 def load_checkpoints(args):
     if args.dataset == 'mnli':
         adv_log_coeffs = {'premise': [], 'hypothesis': []}
