@@ -96,7 +96,7 @@ class Trainer_NOTA(textattack.Trainer):
         # Since adversarial_example won't be an input to the model , we will have to remove it from the input
         # dictionary in collate_fn
         
-        nota_label = torch.max(self.train_dataset.labels) + 1
+        nota_label = len(self.train_dataset.label_names)-1
         
         adversarial_examples = [
             (
@@ -105,15 +105,15 @@ class Trainer_NOTA(textattack.Trainer):
                 nota_label,#r.perturbed_result.ground_truth_output,
             )
             for r in results
-            if isinstance(r, (SuccessfulAttackResult, MaximizedAttackResult,FailedAttackResult))
+            if isinstance(r, (SuccessfulAttackResult, MaximizedAttackResult))#,FailedAttackResult))
         ]
 
         # Name for column indicating if an example is adversarial is set as "_example_type".
         adversarial_dataset = textattack.datasets.Dataset(
             adversarial_examples,
             input_columns=self.train_dataset.input_columns + ("_example_type",),
-            label_map=self.train_dataset.label_map,
-            label_names=self.train_dataset.label_names,
+            #label_map=self.train_dataset.label_map,
+            label_names=self.train_dataset.label_names+["NOTA"],
             output_scale_factor=self.train_dataset.output_scale_factor,
             shuffle=False,
         )
@@ -150,7 +150,7 @@ def main(args):
         gradient_accumulation_steps=1,
         #num_warmup_steps=args.num_warmup_steps,
         learning_rate=args.lr,
-        num_train_adv_examples=1,#0.2,
+        num_train_adv_examples=-1,#0.2,
         attack_num_workers_per_device=6,
         query_budget_train=200,
         checkpoint_interval_epochs=1,
@@ -170,18 +170,21 @@ def main(args):
             param.requires_grad = False
 
     model_wrapper = textattack.models.wrappers.HuggingFaceModelWrapper(model, tokenizer)
-    
+    data_train = textattack.datasets.huggingface_dataset.HuggingFaceDataset(encoded_dataset["train"])
+    data_train.label_names += ["NOTA"]
+    data_eval = textattack.datasets.huggingface_dataset.HuggingFaceDataset(encoded_dataset[testset_key])
+    data_eval.label_names += ["NOTA"]
     trainer = Trainer_NOTA(
         model_wrapper,
         "classification",
         attack= A2TYoo2021.build(model_wrapper, mlm=False),
-        train_dataset=textattack.datasets.huggingface_dataset.HuggingFaceDataset(encoded_dataset["train"]),
-        eval_dataset=textattack.datasets.huggingface_dataset.HuggingFaceDataset(encoded_dataset[testset_key]),
+        train_dataset=data_train,
+        eval_dataset=data_eval,
         training_args=training_args,
     )
 
     trainer.train()
-    trainer.evaluate()
+    #trainer.evaluate()
     suffix = ''
     if args.finetune:
         suffix += '_finetune'

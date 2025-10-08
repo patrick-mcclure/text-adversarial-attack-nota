@@ -21,7 +21,7 @@ import torch
 import torch.nn.functional as F
 
 from src.dataset import load_data
-from src.utils import bool_flag, get_output_file, print_args, load_gpt2_from_dict
+from src.utils import bool_flag, get_output_file_nota, print_args, load_gpt2_from_dict
 
 
 def wer(x, y):
@@ -54,7 +54,7 @@ def log_perplexity(logits, coeffs):
 
 def main(args):
     pretrained = args.model.startswith('textattack')
-    output_file = get_output_file(args, args.model, args.start_index, args.start_index + args.num_samples)
+    output_file = get_output_file_nota(args, args.model, args.start_index, args.start_index + args.num_samples)
     output_file = os.path.join(args.adv_samples_folder, output_file)
     print(f"Outputting files to {output_file}")
     if os.path.exists(output_file):
@@ -389,6 +389,8 @@ if __name__ == "__main__":
         help="print loss every x iterations")
     parser.add_argument("--gumbel_samples", default=100, type=int,
         help="number of gumbel samples; if 0, use argmax")
+    parser.add_argument("--nota", default=False, type=bool_flag,
+        help="use a nota-adapted attack")
 
     args = parser.parse_args()
     print_args(args)
