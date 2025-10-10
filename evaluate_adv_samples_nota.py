@@ -57,8 +57,6 @@ def evaluate(model, tokenizer, testset, text_key=None, batch_size=10, pretrained
                 corr.append(preds.argmax(1).eq(y))
             if nota_defense:
                 nota_label = preds.size()[-1] - 1
-                print("NOTA Label")
-                print(nota_label)
                 nota_y = torch.empty_like(y).fill_(nota_label)
                 if label_perm is not None:
                     asr.append(preds.argmax(1).ne(label_perm(y)) * preds.argmax(1).ne(nota_y))
@@ -69,8 +67,8 @@ def evaluate(model, tokenizer, testset, text_key=None, batch_size=10, pretrained
                     asr.append(preds.argmax(1).ne(label_perm(y)))
                 else:
                     asr.append(preds.argmax(1).ne(y))
-            
-            return torch.cat(corr, 0), torch.cat(asr, 0)
+
+    return torch.cat(corr, 0), torch.cat(asr, 0)
 
 class TokenDataset(Dataset):
     def __init__(self, encodings):
@@ -228,8 +226,8 @@ def main(args):
     
     print("__logs:" + json.dumps({
         "cosine_similarity": float(cosine_sim),
-        "adv_acc2": all_corr.float().mean(1).eq(1).float().mean().item(),
-        "adv_asr2": all_asr.float().mean(1).eq(1).float().mean().item()
+        "adv_acc2": all_corr.float().mean(1).eq(1).float().mean().item(),#all_corr.float().mean(1).eq(1).float().mean().item()
+        "adv_asr2": all_asr.float().mean(1).ne(0).float().mean().item()# all_corr.float().mean(1).eq(1).float().mean().item()
     }))
     
     output_file = get_output_file_nota(args, args.surrogate_model, args.start_index, args.end_index)

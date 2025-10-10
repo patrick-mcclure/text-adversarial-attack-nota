@@ -107,6 +107,17 @@ class Trainer_NOTA(textattack.Trainer):
             for r in results
             if isinstance(r, (SuccessfulAttackResult, MaximizedAttackResult))#,FailedAttackResult))
         ]
+        #adversarial_examples.extend([
+        #     (
+        #        tuple(r.perturbed_result.attacked_text._text_input.values())
+        #        + ("adversarial_example",),
+        #        r.perturbed_result.ground_truth_output,
+        #    )
+        #    for r in results
+        #    if isinstance(r, (FailedAttackResult)) 
+        #])
+
+
 
         # Name for column indicating if an example is adversarial is set as "_example_type".
         adversarial_dataset = textattack.datasets.Dataset(
@@ -150,7 +161,7 @@ def main(args):
         gradient_accumulation_steps=1,
         #num_warmup_steps=args.num_warmup_steps,
         learning_rate=args.lr,
-        num_train_adv_examples=-1,#0.2,
+        num_train_adv_examples=0.2,#-1,
         attack_num_workers_per_device=6,
         query_budget_train=200,
         checkpoint_interval_epochs=1,

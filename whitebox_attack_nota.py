@@ -79,7 +79,11 @@ def main(args):
     if not pretrained:
         # Load model to attack
         suffix = '_finetune' if args.finetune else ''
-        model_checkpoint = os.path.join(args.result_folder, '%s_%s%s_nota.pth' % (args.model.replace('/', '-'), args.dataset, suffix))
+        
+        if args.nota_defense:
+            model_checkpoint = os.path.join(args.result_folder, '%s_%s%s_nota.pth' % (args.model.replace('/', '-'), args.dataset, suffix))
+        else:
+            model_checkpoint = os.path.join(args.result_folder, '%s_%s%s.pth' % (args.model.replace('/', '-'), args.dataset, suffix))
         print('Loading checkpoint: %s' % model_checkpoint)
         model.load_state_dict(torch.load(model_checkpoint))
         tokenizer.model_max_length = 512
